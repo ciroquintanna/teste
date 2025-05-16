@@ -139,8 +139,8 @@
     let desenhando = false;
 
     function desenhar(x, y) {
-      ctx.lineTo(x, y);
       ctx.lineWidth = isErasing ? 30 : 50;
+      ctx.lineTo(x, y);
       ctx.strokeStyle = isErasing ? 'rgba(0,0,0,0)' : currentColor;
       ctx.stroke();
     }
