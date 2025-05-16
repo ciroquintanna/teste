@@ -2,22 +2,24 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Desenho com Câmera</title>
   <style>
     html, body {
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    height: 100%;
-    touch-action: none; /* Evita o scroll durante o desenho */
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      touch-action: none; /* Impede scroll ao desenhar */
     }
+
     #video, #canvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    object-fit: cover;
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
     }
   </style>
 </head>
@@ -36,21 +38,22 @@
         video.srcObject = stream;
       })
       .catch(err => {
-        alert('Erro ao acessar a câmera: ' + err);
+        alert('Erro ao acessar a câmera: ' + err.message);
+        console.error(err);
       });
 
-    // Ajuste do tamanho do canvas
-    function resize() {
+    // Redimensionar canvas conforme a tela
+    function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    window.addEventListener('resize', resize);
-    resize();
-
-    // Lógica de desenho
+    // Variável de controle
     let desenhando = false;
 
+    // Eventos de mouse
     canvas.addEventListener('mousedown', (e) => {
       desenhando = true;
       ctx.beginPath();
@@ -65,13 +68,30 @@
       ctx.stroke();
     });
 
-    canvas.addEventListener('mouseup', () => {
-      desenhando = false;
+    canvas.addEventListener('mouseup', () => desenhando = false);
+    canvas.addEventListener('mouseleave', () => desenhando = false);
+
+    // Eventos de toque (touch)
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault(); // Evita scroll da página
+      desenhando = true;
+      const touch = e.touches[0];
+      ctx.beginPath();
+      ctx.moveTo(touch.clientX, touch.clientY);
     });
 
-    canvas.addEventListener('mouseleave', () => {
-      desenhando = false;
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault(); // Evita scroll da página
+      if (!desenhando) return;
+      const touch = e.touches[0];
+      ctx.lineTo(touch.clientX, touch.clientY);
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 3;
+      ctx.stroke();
     });
+
+    canvas.addEventListener('touchend', () => desenhando = false);
   </script>
 </body>
 </html>
+
