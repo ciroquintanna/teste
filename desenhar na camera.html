@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Desenho com Câmera</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+    }
+    #video, #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Acesso à câmera
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        alert('Erro ao acessar a câmera: ' + err);
+      });
+
+    // Ajuste do tamanho do canvas
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    // Lógica de desenho
+    let desenhando = false;
+
+    canvas.addEventListener('mousedown', (e) => {
+      desenhando = true;
+      ctx.beginPath();
+      ctx.moveTo(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!desenhando) return;
+      ctx.lineTo(e.clientX, e.clientY);
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    });
+
+    canvas.addEventListener('mouseup', () => {
+      desenhando = false;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      desenhando = false;
+    });
+  </script>
+</body>
+</html>
