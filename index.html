@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Desenho com Câmera</title>
+  
+  <!-- Cast API do Google -->
+  <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+  
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      height: 100%;
+      touch-action: none;
+      font-family: sans-serif;
+    }
+
+    #video, #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: 1;
+    }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 2;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px;
+      border-radius: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    #controls button, #controls input[type="color"], cast-button {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #controls button {
+      background: #fff;
+    }
+
+    #controls button.active {
+      background: #f44336;
+      color: #fff;
+    }
+
+    #controls input[type="color"] {
+      width: 40px;
+      height: 36px;
+      padding: 0;
+    }
+
+    cast-button {
+      width: 48px;
+      height: 48px;
+      --connected-color: red;
+      --disconnected-color: white;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" autoplay playsinline></video>
+  <canvas id="canvas"></canvas>
+
+  <div id="controls">
+    <input type="color" id="colorPicker" value="#ff0000">
+    <button id="eraserBtn">Borracha</button>
+    <button id="clearBtn">Limpar</button>
+    <button id="saveBtn">Salvar</button>
+    <cast-button></cast-button>
+  </div>
+
+  <script>
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const colorPicker = document.getElementById('colorPicker');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const eraserBtn = document.getElementById('eraserBtn');
+
+    let currentColor = colorPicker.value;
+    let isErasing = false;
+
+    colorPicker.addEventListener('input', () => {
+      currentColor = colorPicker.value;
+      isErasing = false;
+      eraserBtn.classList.remove('active');
+    });
+
+    eraserBtn.addEventListener('click', () => {
+      isErasing = !isErasing;
+      eraserBtn.classList.toggle('active');
+    });
+
+    clearBtn.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'desenho.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+      .then(stream => {
+        video.srcObject = stream;
+      })
+      .catch(err => {
+        alert('Erro ao acessar a câmera: ' + err.message);
+        console.error(err);
+      });
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    let desenhando = false;
+
+    function desenhar(x, y) {
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = isErasing ? 'rgba(0,0,0,0)' : currentColor;
+      ctx.lineWidth = isErasing ? 30 : 3;
+      ctx.stroke();
+    }
+
+    // Mouse
+    canvas.addEventListener('mousedown', (e) => {
+      desenhando = true;
+      ctx.beginPath();
+      ctx.moveTo(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+      if (!desenhando) return;
+      desenhar(e.clientX, e.clientY);
+    });
+
+    canvas.addEventListener('mouseup', () => desenhando = false);
+    canvas.addEventListener('mouseleave', () => desenhando = false);
+
+    // Toque
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      desenhando = true;
+      const touch = e.touches[0];
+      ctx.beginPath();
+      ctx.moveTo(touch.clientX, touch.clientY);
+    });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!desenhando) return;
+      const touch = e.touches[0];
+      desenhar(touch.clientX, touch.clientY);
+    });
+
+    canvas.addEventListener('touchend', () => desenhando = false);
+
+    // Configuração do Chromecast
+    window['__onGCastApiAvailable'] = function(isAvailable) {
+      if (isAvailable) {
+        cast.framework.CastContext.getInstance().setOptions({
+          receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+          autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+        });
+      }
+    };
+  </script>
+</body>
+</html>
