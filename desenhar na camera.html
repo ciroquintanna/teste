@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Desenho com Câmera</title>
+  
+  <!-- Cast API do Google -->
+  <script type="text/javascript" src="https://www.gstatic.com/cv/js/sender/v1/cast_sender.js?loadCastFramework=1"></script>
+  
   <style>
     html, body {
       margin: 0;
@@ -35,9 +39,10 @@
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+      align-items: center;
     }
 
-    #controls button, #controls input[type="color"] {
+    #controls button, #controls input[type="color"], cast-button {
       padding: 6px 10px;
       border: none;
       border-radius: 4px;
@@ -59,6 +64,13 @@
       height: 36px;
       padding: 0;
     }
+
+    cast-button {
+      width: 48px;
+      height: 48px;
+      --connected-color: red;
+      --disconnected-color: white;
+    }
   </style>
 </head>
 <body>
@@ -70,6 +82,7 @@
     <button id="eraserBtn">Borracha</button>
     <button id="clearBtn">Limpar</button>
     <button id="saveBtn">Salvar</button>
+    <cast-button></cast-button>
   </div>
 
   <script>
@@ -77,7 +90,6 @@
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
-    // Controles
     const colorPicker = document.getElementById('colorPicker');
     const clearBtn = document.getElementById('clearBtn');
     const saveBtn = document.getElementById('saveBtn');
@@ -165,6 +177,16 @@
     });
 
     canvas.addEventListener('touchend', () => desenhando = false);
+
+    // Configuração do Chromecast
+    window['__onGCastApiAvailable'] = function(isAvailable) {
+      if (isAvailable) {
+        cast.framework.CastContext.getInstance().setOptions({
+          receiverApplicationId: chrome.cast.media.DEFAULT_MEDIA_RECEIVER_APP_ID,
+          autoJoinPolicy: chrome.cast.AutoJoinPolicy.ORIGIN_SCOPED
+        });
+      }
+    };
   </script>
 </body>
 </html>
