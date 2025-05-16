@@ -10,7 +10,8 @@
       padding: 0;
       overflow: hidden;
       height: 100%;
-      touch-action: none; /* Impede scroll ao desenhar */
+      touch-action: none;
+      font-family: sans-serif;
     }
 
     #video, #canvas {
@@ -20,6 +21,43 @@
       width: 100vw;
       height: 100vh;
       object-fit: cover;
+      z-index: 1;
+    }
+
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 2;
+      background: rgba(0, 0, 0, 0.5);
+      padding: 8px;
+      border-radius: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    #controls button, #controls input[type="color"] {
+      padding: 6px 10px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    #controls button {
+      background: #fff;
+    }
+
+    #controls button.active {
+      background: #f44336;
+      color: #fff;
+    }
+
+    #controls input[type="color"] {
+      width: 40px;
+      height: 36px;
+      padding: 0;
     }
   </style>
 </head>
@@ -27,12 +65,49 @@
   <video id="video" autoplay playsinline></video>
   <canvas id="canvas"></canvas>
 
+  <div id="controls">
+    <input type="color" id="colorPicker" value="#ff0000">
+    <button id="eraserBtn">Borracha</button>
+    <button id="clearBtn">Limpar</button>
+    <button id="saveBtn">Salvar</button>
+  </div>
+
   <script>
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
 
-    // Acesso à câmera
+    // Controles
+    const colorPicker = document.getElementById('colorPicker');
+    const clearBtn = document.getElementById('clearBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const eraserBtn = document.getElementById('eraserBtn');
+
+    let currentColor = colorPicker.value;
+    let isErasing = false;
+
+    colorPicker.addEventListener('input', () => {
+      currentColor = colorPicker.value;
+      isErasing = false;
+      eraserBtn.classList.remove('active');
+    });
+
+    eraserBtn.addEventListener('click', () => {
+      isErasing = !isErasing;
+      eraserBtn.classList.toggle('active');
+    });
+
+    clearBtn.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'desenho.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
     navigator.mediaDevices.getUserMedia({ video: true, audio: false })
       .then(stream => {
         video.srcObject = stream;
@@ -42,7 +117,6 @@
         console.error(err);
       });
 
-    // Redimensionar canvas conforme a tela
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
@@ -50,10 +124,16 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    // Variável de controle
     let desenhando = false;
 
-    // Eventos de mouse
+    function desenhar(x, y) {
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = isErasing ? 'rgba(0,0,0,0)' : currentColor;
+      ctx.lineWidth = isErasing ? 30 : 3;
+      ctx.stroke();
+    }
+
+    // Mouse
     canvas.addEventListener('mousedown', (e) => {
       desenhando = true;
       ctx.beginPath();
@@ -62,18 +142,15 @@
 
     canvas.addEventListener('mousemove', (e) => {
       if (!desenhando) return;
-      ctx.lineTo(e.clientX, e.clientY);
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      desenhar(e.clientX, e.clientY);
     });
 
     canvas.addEventListener('mouseup', () => desenhando = false);
     canvas.addEventListener('mouseleave', () => desenhando = false);
 
-    // Eventos de toque (touch)
+    // Toque
     canvas.addEventListener('touchstart', (e) => {
-      e.preventDefault(); // Evita scroll da página
+      e.preventDefault();
       desenhando = true;
       const touch = e.touches[0];
       ctx.beginPath();
@@ -81,17 +158,15 @@
     });
 
     canvas.addEventListener('touchmove', (e) => {
-      e.preventDefault(); // Evita scroll da página
+      e.preventDefault();
       if (!desenhando) return;
       const touch = e.touches[0];
-      ctx.lineTo(touch.clientX, touch.clientY);
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 3;
-      ctx.stroke();
+      desenhar(touch.clientX, touch.clientY);
     });
 
     canvas.addEventListener('touchend', () => desenhando = false);
   </script>
 </body>
 </html>
+
 
